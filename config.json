@@ -1,1 +1,1 @@
-{"apiURL": ":8080","elasticURL": "http://localhost:9200","defaultIndex": "scrap_index"}
+{"apiURL": ":6767","elasticURL": "http://localhost:9200","defaultIndex": "scrap_index", "sniffCluster":false}

@@ -12,7 +12,8 @@ type Config struct {
 	ApiURL       string `json:"apiURL, omitempty"`
 	ElasticURL   string `json:"elasticURL, omitempty"`
 	DefaultIndex string `json:"defaultIndex, omitempty"`
-	SniffCluster bool   `json:"sniffCluster, omitempty`
+	SniffCluster bool   `json:"sniffCluster, omitempty"`
+	GinDebug     bool   `json:"ginDebug, omitempty"`
 }
 
 func checkFatalError(err error) {
@@ -72,6 +73,6 @@ func main() {
 	config := getConfFromFile("config.json")
 	client := initESClient(config)
 	defer client.CloseIndex(config.DefaultIndex).Do()
-	api := api.SetupAPI(client, config.DefaultIndex)
+	api := api.SetupAPI(client, config.DefaultIndex, config.GinDebug)
 	api.Run(config.ApiURL)
 }
