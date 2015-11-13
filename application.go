@@ -1,57 +1,26 @@
 package main
 
 import (
-	"encoding/json"
 	"github.com/Jkolios/elasticgin/api"
+	"github.com/Jkolios/elasticgin/config"
+	"github.com/Jkolios/elasticgin/utils"
+	"github.com/streadway/amqp"
 	"gopkg.in/olivere/elastic.v2"
-	"io/ioutil"
 	"log"
 )
 
-type Config struct {
-	ApiURL       string `json:"apiURL, omitempty"`
-	ElasticURL   string `json:"elasticURL, omitempty"`
-	DefaultIndex string `json:"defaultIndex, omitempty"`
-	SniffCluster bool   `json:"sniffCluster, omitempty"`
-	GinDebug     bool   `json:"ginDebug, omitempty"`
-}
-
-func checkFatalError(err error) {
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-}
-
-func checkPassableError(err error) {
-	if err != nil {
-		log.Println(err.Error())
-	}
-}
-
-func getConfFromFile(filename string) *Config {
-
-	confContent, err := ioutil.ReadFile(filename)
-	checkFatalError(err)
-	var config *Config = new(Config)
-	err = json.Unmarshal(confContent, config)
-	checkFatalError(err)
-	log.Println("Configuration loaded")
-	log.Printf("Configuration: %+v\n", config)
-	return config
-}
-
-func initESClient(config *Config) *elastic.Client {
+func initESClient(config *config.Config) *elastic.Client {
 
 	log.Printf("Connecting to ES on: %v", config.ElasticURL)
 	elasticClient, err := elastic.NewClient(elastic.SetURL(config.ElasticURL), elastic.SetSniff(config.SniffCluster))
-	checkFatalError(err)
+	utils.CheckFatalError(err)
 
 	log.Println("Connected to ES")
 	indexExists, err := elasticClient.IndexExists(config.DefaultIndex).Do()
-	checkFatalError(err)
+	utils.CheckFatalError(err)
 	if !indexExists {
 		resp, err := elasticClient.CreateIndex(config.DefaultIndex).Do()
-		checkFatalError(err)
+		utils.CheckFatalError(err)
 		if !resp.Acknowledged {
 			log.Fatal("Cannot create index on ES")
 		}
@@ -62,17 +31,47 @@ func initESClient(config *Config) *elastic.Client {
 	}
 
 	_, err = elasticClient.OpenIndex(config.DefaultIndex).Do()
-	checkFatalError(err)
+	utils.CheckFatalError(err)
 	return elasticClient
+}
+
+func initAMQPClient(config *config.Config) (*amqp.Connection, *amqp.Channel) {
+
+	log.Printf("Connecting to RabbitMQ on: %v", config.AmqpURL)
+	conn, err := amqp.Dial(config.AmqpURL)
+	utils.CheckFatalError(err)
+	ch, err := conn.Channel()
+	utils.CheckFatalError(err)
+	log.Println("Connected to RabbitMQ.")
+	log.Printf("Declaring Queue: %v", config.AmqpQueue)
+	_, err = ch.QueueDeclare(
+		config.AmqpQueue,
+		false, // durable
+		false, // delete when unused
+		false, // exclusive
+		false, // no-wait
+		nil,   // arguments
+	)
+	utils.CheckFatalError(err)
+	log.Println("Queue Declared")
+	return conn, ch
 }
 
 func main() {
 
 	log.Println("Starting elasticgin")
 
-	config := getConfFromFile("config.json")
-	client := initESClient(config)
-	defer client.CloseIndex(config.DefaultIndex).Do()
-	api := api.SetupAPI(client, config.DefaultIndex, config.GinDebug)
+	//Config fetch
+	config := config.GetConfFromJSONFile("config/config.json")
+
+	//ES init
+	esClient := initESClient(config)
+
+	//Rabbitmq init
+	amqpConnection, amqpChannel := initAMQPClient(config)
+	defer amqpConnection.Close()
+	defer amqpChannel.Close()
+
+	api := api.SetupAPI(esClient, amqpChannel, config)
 	api.Run(config.ApiURL)
 }

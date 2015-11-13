@@ -1,7 +1,8 @@
 package api
 
 import (
-	"code.google.com/p/go-uuid/uuid"
+	"github.com/Jkolios/elasticgin/config"
+	"github.com/Jkolios/elasticgin/es_requests"
 	"github.com/gin-gonic/gin"
 	"gopkg.in/olivere/elastic.v2"
 	"log"
@@ -21,7 +22,7 @@ func indexDoc(c *gin.Context) {
 	var err error
 
 	client := c.MustGet("ESClient").(*elastic.Client)
-	defaultIndex := c.MustGet("Index").(string)
+	defaultIndex := c.MustGet("Config").(config.Config).DefaultIndex
 
 	if c.BindJSON(&incoming) == nil {
 		log.Printf("Request JSON: %+v", incoming)
@@ -30,13 +31,10 @@ func indexDoc(c *gin.Context) {
 			incoming.Index = defaultIndex
 		}
 
-		resp, err = client.Index().Index(incoming.Index).
-			Type(incoming.Type).Id(uuid.New()).BodyJson(incoming.Body).Do()
-
+		resp, err = es_requests.IndexDocMapping(client, incoming.Index, incoming.Type, incoming.Body)
 	} else if c.Bind(&incomingMessage) == nil {
 
-		resp, err = client.Index().Index(defaultIndex).
-			Type("message").Id(uuid.New()).BodyJson(incomingMessage).Do()
+		resp, err = es_requests.IndexDocMessage(client, incoming.Index, "message", incomingMessage)
 	} else {
 		c.String(http.StatusBadRequest, "Cannot process this document")
 		return
@@ -56,7 +54,7 @@ func indexDoc(c *gin.Context) {
 func getDoc(c *gin.Context) {
 
 	client := c.MustGet("ESClient").(*elastic.Client)
-	defaultIndex := c.MustGet("Index").(string)
+	defaultIndex := c.MustGet("Config").(config.Config).DefaultIndex
 
 	requestedId := c.Query("docId")
 	requestedType := c.Query("docType")
@@ -67,27 +65,27 @@ func getDoc(c *gin.Context) {
 		requestedIndex = defaultIndex
 	}
 
-	esResp, err := client.Get().Index(requestedIndex).Type(requestedType).Id(requestedId).Do()
+	esResp, err := es_requests.GetDoc(client, requestedIndex, requestedType, requestedId)
 
-	response := make(map[string]interface{})
+	responseBody := make(map[string]interface{})
 
 	if err != nil {
-		response["success"] = false
-		response["error"] = err.Error()
-		c.JSON(http.StatusBadRequest, response)
+		responseBody["success"] = false
+		responseBody["error"] = err.Error()
+		c.JSON(http.StatusBadRequest, responseBody)
 		return
 	}
 
 	if !esResp.Found {
-		response["success"] = false
-		response["error"] = "Document not found."
-		c.JSON(http.StatusOK, response)
+		responseBody["success"] = false
+		responseBody["error"] = "Document not found."
+		c.JSON(http.StatusOK, responseBody)
 		return
 
 	} else {
-		response["success"] = true
-		response["doc"] = esResp.Source
-		c.JSON(http.StatusOK, response)
+		responseBody["success"] = true
+		responseBody["doc"] = esResp.Source
+		c.JSON(http.StatusOK, responseBody)
 		return
 	}
 }

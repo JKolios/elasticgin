@@ -1,25 +1,29 @@
 package api
 
 import (
+	"github.com/Jkolios/elasticgin/config"
 	"github.com/gin-gonic/gin"
 	"gopkg.in/olivere/elastic.v2"
+	"github.com/streadway/amqp"
 )
 
-func esInjector(ESClient *elastic.Client, index string) gin.HandlerFunc {
+func contextInjector(ESClient *elastic.Client, AMQPChannel *amqp.Channel, config *config.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Set("ESClient", ESClient)
-		c.Set("Index", index)
+		c.Set("AMQPChannel", AMQPChannel)
+		c.Set("Config", config)
+		
 		c.Next()
 	}
 }
 
-func SetupAPI(ESClient *elastic.Client, index string, debug bool) *gin.Engine {
-	if !debug {
+func SetupAPI(ESClient *elastic.Client, AMQPChannel *amqp.Channel, config *config.Config) *gin.Engine {
+	if !config.GinDebug {
 		gin.SetMode(gin.ReleaseMode)
 	}
 	router := gin.New()
 	router.Use(gin.Logger())
-	router.Use(esInjector(ESClient, index))
+	router.Use(contextInjector(ESClient, AMQPChannel, config))
 
 	//API v0 endpoints
 	v0 := router.Group("/v0")
