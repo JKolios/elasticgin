@@ -12,7 +12,7 @@ import (
 type IncomingDoc struct {
 	Type  string            `json:"type" binding:"required"`
 	Index string            `json:"index"`
-	Body  map[string]string `json:"body" binding:"required"`
+	Body  map[string]interface{} `json:"body" binding:"required"`
 }
 
 func indexDoc(c *gin.Context) {

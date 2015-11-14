@@ -13,7 +13,7 @@ type Config struct {
 	DefaultIndex string `json:"defaultIndex"`
 	SniffCluster bool   `json:"sniffCluster, omitempty"`
 	AmqpURL      string `json:"amqpURL"`
-	AmqpQueue    string `json:"amqpQueue"`
+	AmqpQueues   []string `json:"amqpQueues"`
 	GinDebug     bool   `json:"ginDebug, omitempty"`
 }
 

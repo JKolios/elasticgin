@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/Jkolios/elasticgin/api"
+	"github.com/Jkolios/elasticgin/rabbitmq"
 	"github.com/Jkolios/elasticgin/config"
 	"github.com/Jkolios/elasticgin/utils"
 	"github.com/streadway/amqp"
@@ -43,17 +44,19 @@ func initAMQPClient(config *config.Config) (*amqp.Connection, *amqp.Channel) {
 	ch, err := conn.Channel()
 	utils.CheckFatalError(err)
 	log.Println("Connected to RabbitMQ.")
-	log.Printf("Declaring Queue: %v", config.AmqpQueue)
-	_, err = ch.QueueDeclare(
-		config.AmqpQueue,
-		false, // durable
-		false, // delete when unused
-		false, // exclusive
-		false, // no-wait
-		nil,   // arguments
-	)
-	utils.CheckFatalError(err)
-	log.Println("Queue Declared")
+	for _, queue := range(config.AmqpQueues){
+		log.Printf("Declaring Queue: %v", queue)
+		_, err = ch.QueueDeclare(
+			queue,
+			false, // durable
+			false, // delete when unused
+			false, // exclusive
+			false, // no-wait
+			nil,   // arguments
+		)
+		utils.CheckFatalError(err)
+		log.Println("Queue Declared")
+}
 	return conn, ch
 }
 
@@ -71,6 +74,8 @@ func main() {
 	amqpConnection, amqpChannel := initAMQPClient(config)
 	defer amqpConnection.Close()
 	defer amqpChannel.Close()
+
+	rabbitmq.StartSubscribers(amqpChannel, esClient, config)
 
 	api := api.SetupAPI(esClient, amqpChannel, config)
 	api.Run(config.ApiURL)
