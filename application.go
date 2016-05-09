@@ -1,10 +1,10 @@
 package main
 
 import (
-	"github.com/Jkolios/elasticgin/api"
-	"github.com/Jkolios/elasticgin/rabbitmq"
-	"github.com/Jkolios/elasticgin/config"
-	"github.com/Jkolios/elasticgin/utils"
+	"github.com/JKolios/elasticgin/api"
+	"github.com/JKolios/elasticgin/rabbitmq"
+	"github.com/JKolios/elasticgin/config"
+	"github.com/JKolios/elasticgin/utils"
 	"github.com/streadway/amqp"
 	"gopkg.in/olivere/elastic.v2"
 	"log"

@@ -4,7 +4,7 @@ import (
 	"io/ioutil"
 	"log"
 	"encoding/json"
-	"github.com/Jkolios/elasticgin/utils"
+	"github.com/JKolios/elasticgin/utils"
 	)
 
 type Config struct {

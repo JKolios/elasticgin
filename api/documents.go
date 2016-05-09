@@ -1,8 +1,8 @@
 package api
 
 import (
-	"github.com/Jkolios/elasticgin/config"
-	"github.com/Jkolios/elasticgin/es_requests"
+	"github.com/JKolios/elasticgin/config"
+	"github.com/JKolios/elasticgin/es_requests"
 	"github.com/gin-gonic/gin"
 	"gopkg.in/olivere/elastic.v2"
 	"log"

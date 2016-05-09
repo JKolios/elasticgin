@@ -1,7 +1,7 @@
 package api
 
 import (
-	"github.com/Jkolios/elasticgin/config"
+	"github.com/JKolios/elasticgin/config"
 	"github.com/gin-gonic/gin"
 	"gopkg.in/olivere/elastic.v2"
 	"github.com/streadway/amqp"
