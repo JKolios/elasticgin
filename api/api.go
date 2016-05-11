@@ -3,7 +3,7 @@ package api
 import (
 	"github.com/JKolios/elasticgin/config"
 	"github.com/gin-gonic/gin"
-	"gopkg.in/olivere/elastic.v2"
+	"gopkg.in/olivere/elastic.v3"
 	"github.com/streadway/amqp"
 )
 
@@ -31,6 +31,7 @@ func SetupAPI(ESClient *elastic.Client, AMQPChannel *amqp.Channel, config *confi
 		v0.GET("/status", status)
 		v0.POST("/indexDoc", indexDoc)
 		v0.GET("/getDoc", getDoc)
+		v0.POST("/termQuery", termQuery)
 	}
 	return router
 }
